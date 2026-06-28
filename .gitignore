@@ -1,0 +1,15 @@
+.idea/
+__pycache__/
+*.pyc
+.env
+.env.*
+.venv/
+venv/
+*.pth
+*.pt
+*.onnx
+*.zip
+*.docx
+test1.jpg
+git_push_work.bat
+git_remove_remote.bat

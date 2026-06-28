@@ -1,107 +1,115 @@
+# HNU Digital Image Processing Lab
 
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-Image%20Processing-5C3EE8?logo=opencv&logoColor=white)](https://opencv.org/)
+[![PyQt5](https://img.shields.io/badge/PyQt5-Desktop%20GUI-41CD52)](https://riverbankcomputing.com/software/pyqt/)
+[![NumPy](https://img.shields.io/badge/NumPy-Scientific%20Computing-013243?logo=numpy&logoColor=white)](https://numpy.org/)
+[![SAM](https://img.shields.io/badge/Segment%20Anything-Interactive%20Segmentation-111827)](https://github.com/facebookresearch/segment-anything)
+[![Last Commit](https://img.shields.io/github/last-commit/1YeCheng/HNU-Digial_image_processing_Lab?label=last%20commit)](https://github.com/1YeCheng/HNU-Digial_image_processing_Lab)
 
----
+This repository collects seven image-processing and computer-vision labs completed for the HNU Digital Image Processing course. Rather than isolated scripts, the later assignments were organized as reusable mini-systems: a PyQt5 image-processing desktop application, frequency-domain visualization, morphology-based OCR, CT lung preprocessing, and Segment Anything based interactive segmentation.
 
-# HNU-Digital_image_processing_Lab
+The project is intended to show my practical research-engineering workflow: algorithm implementation, GUI interaction design, medical-image preprocessing, reproducible outputs, and clear documentation.
 
-## 更新日志
+## Highlights
 
-### 2026-03-24
-新增 `20260324_work1`，基于 PyQt5 + OpenCV 的图像处理教学系统（多层架构）。
+- Built a layered PyQt5 + OpenCV desktop application with controller, service, core algorithm, and UI modules.
+- Implemented classic spatial transforms, histogram operations, artistic filters, frequency-domain filtering, and morphology pipelines from first principles with OpenCV and NumPy.
+- Developed a CT lung extraction and nodule candidate preprocessing workflow, including connected-component filtering, convex-hull repair, dilation, and 3D slice-continuity correction.
+- Integrated Segment Anything for promptable mask generation and exported masks as visualization, NumPy arrays, and JSON annotations.
+- Added result artifacts for visual inspection so the repository can be reviewed directly on GitHub.
 
-### 2026-03-26
-新增 `20260326_work2`，增强型图像空间变换演示系统（支持物理缩放与图像拼接）。
+## Work Overview
 
----
+| Folder | Topic | Main Techniques | Output |
+| --- | --- | --- | --- |
+| `20260324_work1` | Image-processing desktop system | PyQt5, OpenCV, MVC-style layering, asynchronous worker threads | GUI for grayscale, thresholding, transforms, filters, effects, stitching, and optional AI image review |
+| `20260326_work2` | Spatial transformation experiments | affine transform, perspective transform, physical scaling, image stitching | transformation scripts and sample image |
+| `20260407_work3` | Frequency-domain processing | Fourier transform, low-pass/high-pass filtering, Gaussian smoothing, Laplacian sharpening | GUI and saved spectrum/result images |
+| `20260409_work4` | Mathematical morphology | erosion, dilation, opening, closing, structural elements | morphology demo scripts |
+| `20260414_work5` | Instrument OCR prototype | template matching, video capture, threaded processing, morphology-based cleanup | OCR system prototype and sample media |
+| `20260422_work6` | Lung CT preprocessing | connected components, convex hull, dilation, slice continuity, nodule candidate aggregation | lung masks, preprocessing arrays, overview figures |
+| `20260506_work7` | SAM-based segmentation | Segment Anything, mask export, JSON formatting, visualization | promptable segmentation outputs for sample images |
 
-## 20260326_work2 (最新更新)
+## Representative Results
 
-**注意：该代码目前为独立演示程序，暂时没有放入完整的项目中。**
+### Lung CT Preprocessing
 
-### 核心设计理念
-本实验重点解决图像在空间变换中的“物理一致性”问题。不同于简单的 UI 缩放，本系统所有的操作均直接作用于图像矩阵，确保变换后的像素总量、画布尺寸与物理逻辑同步。
+`work6` focuses on robust lung parenchyma extraction from a CT slice sequence. The workflow separates inner lung air from external air, repairs boundary concavities with convex hulls, expands the mask to preserve juxtapleural nodules, and propagates valid masks across neighboring slices when a slice-level failure is detected.
 
-### 核心功能
+![CT preprocessing overview](20260422_work6/results/result_overview.png)
 
-#### 1. 物理缩放 (Physical Scaling)
-- **像素同步**：缩放时直接调用 `cv2.resize` 进行重采样，缩小图片会真实减少总像素点，降低内存占用。
-- **框随图走**：UI 界面采用动态容器技术，红色的物理边框会紧紧包裹图像边缘。当图像物理缩小时，边框同步收缩，不再留白。
-- **高质量插值**：缩小采用 `INTER_AREA` 抗锯齿，放大采用 `INTER_CUBIC` 双立方插值，确保图像不失真。
+![Juxtapleural nodule validation](20260422_work6/results/juxtapleural_nodules.png)
 
-#### 2. 图像拼接 (Image Stitching)
-- **智能缝合**：集成 OpenCV `Stitcher` 算法，自动提取特征点进行全景对齐。
-- **强制拼接 (保底)**：若两图重叠度不足导致智能拼接失败，系统提供“基础并排拼接”模式，自动对齐高度并物理连接。
+### Segment Anything Export
 
-#### 3. 几何变换列表
+`work7` wraps Segment Anything inference into a small workflow that saves visualization images, binary masks, NumPy arrays, and JSON annotations for downstream processing.
 
-| 分类 | 功能 | 技术实现说明 |
-|------|------|------|
-| **基础变换** | 旋转 | 自动扩充画布尺寸，计算外接矩形，防止旋转后图像边缘被裁剪 |
-| | 平移 | 物理移动像素坐标，动态增加画布宽度/高度 |
-| | 镜像 | 支持水平与垂直方向的物理翻转 |
-| **高级变换** | 剪切 (Shear) | 改变图像的拓扑形状，生成平行四边形畸变 |
-| | 透视变换 | 基于 4 点投影矩阵，模拟 3D 视角下的梯形形变 |
-| | 波浪特效 | 基于 `cv2.remap` 的非映射变换，利用正弦函数改变像素坐标映射 |
-| | 自定义仿射 | 支持用户手动在图上选择 3 个源点与 3 个目标点进行任意仿射映射 |
+![SAM cloud segmentation](20260506_work7/outputs/vis/cloud_vis.jpg)
 
-### 交互优化
-- **双滚动条支持**：采用 `QScrollArea` 承载大尺寸图像，支持超大分辨率图片的物理查看。
-- **实时尺寸监测**：界面实时打印当前图像的物理分辨率（如 `800x600 px`），方便验证缩放效果。
+### Frequency-Domain Image Processing
 
----
+`work3` records both the processed image and its spectrum, making each operation easier to compare and explain.
 
-## 20260324_work1
+![Gaussian smoothing result](20260407_work3/大数据2301_成烨_202308010208/高斯平滑(核=21)result.png)
 
-### 代码结构
+![Gaussian smoothing spectrum](20260407_work3/大数据2301_成烨_202308010208/高斯平滑(核=21)spectrum.png)
 
+## Repository Structure
+
+```text
+.
+├── 20260324_work1/          # PyQt5 image-processing desktop application
+├── 20260326_work2/          # spatial transform scripts
+├── 20260407_work3/          # frequency-domain GUI and result images
+├── 20260409_work4/          # morphology experiments
+├── 20260414_work5/          # instrument OCR prototype
+├── 20260422_work6/          # lung CT preprocessing workflow and results
+├── 20260506_work7/          # Segment Anything based segmentation workflow
+└── README.md
 ```
-20260324_work1/
-├── main.py                        # 程序入口，启动 PyQt5 应用
-├── core/
-│   └── image_processor.py         # 图像算法核心层，所有处理算法实现
-├── service/
-│   └── image_service.py           # 业务逻辑层，管理图像状态与调用链
-├── controller/
-│   └── image_controller.py        # 控制层，衔接 UI 与 Service
-└── ui/
-    └── main_window.py             # 界面层，PyQt5 主窗口与交互逻辑
+
+## Quick Start
+
+Create an environment and install common dependencies:
+
+```bash
+pip install numpy opencv-python pillow matplotlib scipy scikit-image PyQt5
 ```
 
-采用四层 MVC 架构：`UI → Controller → Service → Core`，各层职责分离，便于扩展和维护。
+Run the main desktop image-processing application:
 
-### 功能列表
+```bash
+cd 20260324_work1
+python main.py
+```
 
-#### 基础变换（基于当前图像累积叠加）
+Run the CT preprocessing examples:
 
-| 功能 | 说明 |
-|------|------|
-| 灰度化 | BGR 转灰度，再转回 BGR 显示 |
-| 二值化 | 固定阈值 128 二值化处理 |
-| 反转 | 像素取反（255 - 原值）|
-| Gamma 变换 | 幂律变换，默认 γ=0.5，提亮暗部 |
-| 对数变换 | log(1+x) 拉伸低灰度区间 |
-| 指数变换 | exp(x) 压缩低灰度、拉伸高灰度 |
-| 缩小一半 | 双线性插值缩放至 50% |
-| 直方图均衡化 | 对 BGR 三通道分别均衡，拉伸整体对比度，保留色彩 |
+```bash
+cd 20260422_work6
+python lung_extract.py
+python preprocess_png.py
+```
 
-#### 图像特效（始终基于原始图像，不累积）
+Run the SAM segmentation workflow:
 
-| 特效 | 说明 |
-|------|------|
-| 毛玻璃特效 | 行列方向各自独立随机偏移（范围 0~14），磨砂扩散感强 |
-| 浮雕特效 | 强化浮雕核（权重扩大）+ Unsharp Mask 锐化 + CLAHE 局部对比度均衡，立体感强烈 |
-| 油画特效 | 多次双边滤波 + 边缘叠加 + 饱和度提升，模拟油画笔触 |
-| 马赛克特效 | 块状像素化，默认块大小 20px |
-| 素描特效 | Dodge Blend + CLAHE 对比度增强 + Canny 边缘叠加 |
-| 怀旧特效 | 线性颜色矩阵变换，输出暖褐色调 |
-| 光照特效 | 圆形渐变光晕，中心亮度增强，默认强度 200 |
-| 卡通特效 | 双边滤波色块化 + 自适应阈值边缘线条 |
+```bash
+cd 20260506_work7
+pip install -r requirements.txt
+python main.py --config configs/default.yaml
+```
 
-#### 其他功能
+The optional AI image-review feature in `work1` reads credentials from environment variables instead of storing secrets in code:
 
-- **后台线程处理**：耗时操作在 `WorkerThread`（QThread）中执行。
-- **图像状态管理**：`ImageService` 同时维护原始图像和当前结果。
-- **恢复原图**：一键重置。
-- **图像信息查看**：弹窗显示尺寸与通道数。
+```bash
+set OPENAI_API_KEY=your_api_key
+set OPENAI_BASE_URL=https://api.openai.com/v1
+set OPENAI_VISION_MODEL=gpt-4o-mini
+```
 
----
+## Notes For Reviewers
+
+- The folders preserve the chronological development of the course labs, while the README highlights the parts most relevant to computer-vision research and engineering.
+- Generated Python cache files are intentionally ignored.
+- Some large result folders are kept because they make the medical-image and segmentation pipelines reviewable without rerunning every experiment.

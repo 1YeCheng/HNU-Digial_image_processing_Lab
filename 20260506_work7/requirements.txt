@@ -1,0 +1,20 @@
+# SAM图像分割项目依赖
+#
+# 当前环境 (denoising) 已满足：
+#   torch 2.5.1+cu121, torchvision 0.20.1+cu121
+#   opencv-python 4.13.0, numpy 2.4.4, matplotlib 3.10.8
+#   Pillow 12.1.1, PyYAML 6.0.3
+#
+# 只需安装以下两个缺失包：
+#
+#   pip install pycocotools segment-anything -i https://pypi.tuna.tsinghua.edu.cn/simple
+#
+# 若 GitHub 访问慢，segment-anything 可手动安装：
+#   git clone https://github.com/facebookresearch/segment-anything.git
+#   cd segment-anything && pip install -e .
+
+# numpy 2.x 兼容版本
+pycocotools>=2.0.7
+
+# SAM 官方库
+segment-anything @ git+https://github.com/facebookresearch/segment-anything.git

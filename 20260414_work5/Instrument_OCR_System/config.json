@@ -1,0 +1,31 @@
+{
+  "camera": {
+    "frames_per_batch": 3,
+    "sample_interval": 1,
+    "sample_count": 3
+  },
+  "OCR": {
+    "template_dir": "template",
+    "ocr_method": "template",
+    "threshold": 0.6,
+    "is_crop": false,
+    "img_w": 1920,
+    "img_h": 1080,
+    "crop_x0": 0,
+    "crop_y0": 0,
+    "crop_x1": 1920,
+    "crop_y1": 1080,
+    "crop_padding": 5,
+    "struct_w": 11,
+    "struct_h": 5,
+    "min_ratio": 1.5,
+    "max_ratio": 20,
+    "min_area": 100
+  },
+  "label_to_chinese": {
+    "temp": "温度",
+    "press": "压力",
+    "flow": "流量",
+    "total": "累计"
+  }
+}

@@ -1,0 +1,25 @@
+model:
+  type: vit_h                          # vit_b / vit_l / vit_h
+  checkpoint: models/sam_vit_h_4b8939.pth
+  device: auto                         # auto / cuda / cpu
+
+inference:
+  multimask_output: true               # 输出3个候选掩码
+  score_threshold: 0.0                 # 置信度过滤阈值
+
+output:
+  masks_dir: outputs/masks
+  vis_dir: outputs/vis
+  json_dir: outputs/json
+  save_all_masks: false                # true=保存全部候选，false=仅保存最优
+
+visualization:
+  mask_color: [0, 0, 255]             # BGR 红色
+  mask_alpha: 0.4
+  contour_color: [0, 255, 0]          # BGR 绿色
+  contour_thickness: 2
+  point_radius: 8
+
+json:
+  category_name: object
+  polygon_epsilon: 2.0                 # 多边形近似精度（像素）

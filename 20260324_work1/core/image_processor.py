@@ -58,29 +58,38 @@ class ImageProcessor:
     # ===== 特效处理 =====
 
     def glass(self, src):
-        """毛玻璃特效（向量化）"""
+        """毛玻璃特效（向量化）：偏移范围加大到15，并做双向随机偏移增强磨砂感"""
         h, w = src.shape[:2]
-        if h < 7 or w < 7:
+        offset = 15
+        if h < offset + 1 or w < offset + 1:
             return src.copy()
         dst = src.copy()
-        rng = np.random.randint(0, 6, size=(h - 6, w - 6), dtype=np.int32)
-        ii = np.arange(h - 6, dtype=np.int32)[:, None]
-        jj = np.arange(w - 6, dtype=np.int32)[None, :]
-        dst[:h - 6, :w - 6] = src[ii + rng, jj + rng]
+        rh = h - offset
+        rw = w - offset
+        rng_i = np.random.randint(0, offset, size=(rh, rw), dtype=np.int32)
+        rng_j = np.random.randint(0, offset, size=(rh, rw), dtype=np.int32)
+        ii = np.arange(rh, dtype=np.int32)[:, None]
+        jj = np.arange(rw, dtype=np.int32)[None, :]
+        dst[:rh, :rw] = src[ii + rng_i, jj + rng_j]
         return dst
 
     def relief(self, img):
         """
-        浮雕特效：45度方向光源浮雕核 + 直方图均衡，
-        立体感强烈，速度极快。
+        浮雕特效：更强的浮雕核（权重扩大）+ Unsharp Mask 锐化 + CLAHE 局部对比度增强，
+        立体感更强烈。
         """
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        kernel = np.array([[-2, -1,  0],
-                           [-1,  1,  1],
-                           [ 0,  1,  2]], dtype=np.float32)
+        kernel = np.array([[-4, -2,  0],
+                           [-2,  1,  2],
+                           [ 0,  2,  4]], dtype=np.float32)
         emboss = cv2.filter2D(gray, -1, kernel)
         emboss = np.clip(emboss + 128, 0, 255).astype(np.uint8)
-        emboss = cv2.equalizeHist(emboss)
+        # Unsharp Mask 进一步锐化边缘
+        blur = cv2.GaussianBlur(emboss, (0, 0), 3)
+        emboss = cv2.addWeighted(emboss, 1.8, blur, -0.8, 0)
+        # CLAHE 局部对比度增强，比全局均衡更有层次感
+        clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+        emboss = clahe.apply(emboss)
         return cv2.cvtColor(emboss, cv2.COLOR_GRAY2BGR)
 
     def oil(self, img):
@@ -101,14 +110,11 @@ class ImageProcessor:
         return cv2.bitwise_and(result, edge_inv)
 
     def mask(self, src, block=20):
-        """马赛克特效"""
+        """马赛克特效（向量化：下采样再上采样）"""
         h, w = src.shape[:2]
         b = max(4, int(block))
-        dst = src.copy()
-        for i in range(0, h, b):
-            for j in range(0, w, b):
-                dst[i:i + b, j:j + b] = src[i, j]
-        return dst
+        small = cv2.resize(src, (w // b, h // b), interpolation=cv2.INTER_LINEAR)
+        return cv2.resize(small, (w, h), interpolation=cv2.INTER_NEAREST)
 
     def sketch(self, img):
         """
@@ -126,8 +132,8 @@ class ImageProcessor:
         return cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
 
     def old(self, src):
-        """怀旧特效（向量化）"""
-        b, g, r = cv2.split(src.astype(np.float64))
+        """怀旧特效（向量化，float32）"""
+        b, g, r = cv2.split(src.astype(np.float32))
         new_b = 0.272 * r + 0.534 * g + 0.131 * b
         new_g = 0.349 * r + 0.686 * g + 0.168 * b
         new_r = 0.393 * r + 0.769 * g + 0.189 * b
@@ -149,6 +155,12 @@ class ImageProcessor:
         dst[in_mask] = np.clip(dst[in_mask] + boost, 0, 255)
         return dst.astype(np.uint8)
 
+    def hist_equalize(self, img):
+        """直方图均衡化（YCrCb空间只均衡亮度，保留色彩不失真）"""
+        ycrcb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+        ycrcb[:, :, 0] = cv2.equalizeHist(ycrcb[:, :, 0])
+        return cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
+
     def cartoonize(self, img):
         """卡通特效"""
         img_color = img.copy()
@@ -161,3 +173,69 @@ class ImageProcessor:
         )
         edge_color = cv2.cvtColor(edge, cv2.COLOR_GRAY2BGR)
         return cv2.bitwise_and(img_color, edge_color)
+
+    # ===== 空间变换 =====
+
+    def zoom(self, img, factor):
+        """物理缩放"""
+        h, w = img.shape[:2]
+        new_w, new_h = max(5, int(w * factor)), max(5, int(h * factor))
+        interp = cv2.INTER_AREA if factor < 1.0 else cv2.INTER_CUBIC
+        return cv2.resize(img, (new_w, new_h), interpolation=interp)
+
+    def rotate(self, img, angle):
+        """旋转（自动扩充画布防裁剪）"""
+        h, w = img.shape[:2]
+        M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
+        cos, sin = np.abs(M[0, 0]), np.abs(M[0, 1])
+        nW, nH = int(h * sin + w * cos), int(h * cos + w * sin)
+        M[0, 2] += nW / 2 - w // 2
+        M[1, 2] += nH / 2 - h // 2
+        return cv2.warpAffine(img, M, (nW, nH), borderValue=(255, 255, 255))
+
+    def translate(self, img, tx, ty):
+        """平移（扩充画布）"""
+        h, w = img.shape[:2]
+        M = np.float32([[1, 0, tx], [0, 1, ty]])
+        return cv2.warpAffine(img, M, (w + abs(tx), h + abs(ty)), borderValue=(255, 255, 255))
+
+    def flip_h(self, img):
+        """水平镜像"""
+        return cv2.flip(img, 1)
+
+    def flip_v(self, img):
+        """垂直镜像"""
+        return cv2.flip(img, 0)
+
+    def shear(self, img, factor):
+        """剪切变换"""
+        h, w = img.shape[:2]
+        M = np.float32([[1, factor, 0], [0, 1, 0]])
+        return cv2.warpAffine(img, M, (int(w + abs(factor) * h), h), borderValue=(255, 255, 255))
+
+    def perspective(self, img):
+        """预设透视变换（梯形畸变）"""
+        h, w = img.shape[:2]
+        src = np.float32([[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]])
+        dst = np.float32([[w * 0.2, h * 0.1], [w * 0.8, h * 0.1], [0, h - 1], [w - 1, h - 1]])
+        M = cv2.getPerspectiveTransform(src, dst)
+        return cv2.warpPerspective(img, M, (w, h), borderValue=(255, 255, 255))
+
+    def wave(self, img):
+        """水平波浪特效（remap 非线性变换）"""
+        h, w = img.shape[:2]
+        map_x, map_y = np.indices((h, w), dtype=np.float32)
+        map_x = map_x + 15 * np.sin(map_y / 20.0)
+        return cv2.remap(img, map_x, map_y, cv2.INTER_LINEAR, borderValue=(255, 255, 255))
+
+    def stitch(self, img1, img2):
+        """图像拼接，失败时并排合并"""
+        stitcher = cv2.Stitcher_create()
+        status, stitched = stitcher.stitch([img1, img2])
+        if status == cv2.Stitcher_OK:
+            return stitched, True
+        h1, w1 = img1.shape[:2]
+        h2, w2 = img2.shape[:2]
+        scale = h1 / h2
+        img2_res = cv2.resize(img2, (int(w2 * scale), h1))
+        return cv2.hconcat([img1, img2_res]), False

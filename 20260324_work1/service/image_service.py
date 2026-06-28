@@ -100,3 +100,64 @@ class ImageService:
         if self.image is None:
             return None
         return self.processor.cartoonize(self.image)
+
+    def hist_equalize(self):
+        self.result = self.processor.hist_equalize(self.result)
+        return self.result
+
+    # ===== 空间变换（基于 result 累积）=====
+
+    def zoom(self, factor):
+        if self.result is None:
+            return None
+        self.result = self.processor.zoom(self.result, factor)
+        return self.result
+
+    def rotate(self, angle):
+        if self.result is None:
+            return None
+        self.result = self.processor.rotate(self.result, angle)
+        return self.result
+
+    def translate(self, tx, ty):
+        if self.result is None:
+            return None
+        self.result = self.processor.translate(self.result, tx, ty)
+        return self.result
+
+    def flip_h(self):
+        if self.result is None:
+            return None
+        self.result = self.processor.flip_h(self.result)
+        return self.result
+
+    def flip_v(self):
+        if self.result is None:
+            return None
+        self.result = self.processor.flip_v(self.result)
+        return self.result
+
+    def shear(self, factor):
+        if self.result is None:
+            return None
+        self.result = self.processor.shear(self.result, factor)
+        return self.result
+
+    def perspective(self):
+        if self.result is None:
+            return None
+        self.result = self.processor.perspective(self.result)
+        return self.result
+
+    def wave(self):
+        if self.result is None:
+            return None
+        self.result = self.processor.wave(self.result)
+        return self.result
+
+    def stitch(self, img2):
+        if self.result is None:
+            return None, False
+        result, ok = self.processor.stitch(self.result, img2)
+        self.result = result
+        return self.result, ok

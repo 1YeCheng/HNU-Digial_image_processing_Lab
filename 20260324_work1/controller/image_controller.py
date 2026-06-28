@@ -78,3 +78,34 @@ class ImageController:
     def cartoonize(self):
 
         return self.service.cartoonize()
+
+    def hist_equalize(self):
+
+        return self.service.hist_equalize()
+
+    def zoom(self, factor):
+        return self.service.zoom(factor)
+
+    def rotate(self, angle):
+        return self.service.rotate(angle)
+
+    def translate(self, tx, ty):
+        return self.service.translate(tx, ty)
+
+    def flip_h(self):
+        return self.service.flip_h()
+
+    def flip_v(self):
+        return self.service.flip_v()
+
+    def shear(self, factor):
+        return self.service.shear(factor)
+
+    def perspective(self):
+        return self.service.perspective()
+
+    def wave(self):
+        return self.service.wave()
+
+    def stitch(self, img2):
+        return self.service.stitch(img2)
