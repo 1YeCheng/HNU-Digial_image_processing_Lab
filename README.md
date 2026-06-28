@@ -5,7 +5,6 @@
 [![PyQt5](https://img.shields.io/badge/PyQt5-Desktop%20GUI-41CD52)](https://riverbankcomputing.com/software/pyqt/)
 [![NumPy](https://img.shields.io/badge/NumPy-Scientific%20Computing-013243?logo=numpy&logoColor=white)](https://numpy.org/)
 [![SAM](https://img.shields.io/badge/Segment%20Anything-Interactive%20Segmentation-111827)](https://github.com/facebookresearch/segment-anything)
-[![Last Commit](https://img.shields.io/github/last-commit/1YeCheng/HNU-Digial_image_processing_Lab?label=last%20commit)](https://github.com/1YeCheng/HNU-Digial_image_processing_Lab)
 
 This repository collects seven image-processing and computer-vision labs completed for the HNU Digital Image Processing course. Rather than isolated scripts, the later assignments were organized as reusable mini-systems: a PyQt5 image-processing desktop application, frequency-domain visualization, morphology-based OCR, CT lung preprocessing, and Segment Anything based interactive segmentation.
 
